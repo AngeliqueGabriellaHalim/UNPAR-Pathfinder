@@ -1,14 +1,21 @@
+// src/App.jsx
+// Router setup — 3 pages:
+//   /        → Home (search form)
+//   /route   → RoutePage (step-by-step navigation with images)
+//   /confirm → ConfirmPage (arrival confirmation)
+
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home.jsx";
-import Result from "./pages/Result.jsx";
+import RoutePage from "./pages/RoutePage.jsx";
+import ConfirmPage from "./pages/ConfirmPage.jsx";
 
 export default function App() {
   return (
-    // BrowserRouter so the URL bar updates without reloading the page.
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/result" element={<Result />} />
+        <Route path="/route" element={<RoutePage />} />
+        <Route path="/confirm" element={<ConfirmPage />} />
       </Routes>
     </BrowserRouter>
   );

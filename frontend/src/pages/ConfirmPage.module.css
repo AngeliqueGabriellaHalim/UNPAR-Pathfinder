@@ -1,0 +1,201 @@
+/* src/pages/ConfirmPage.module.css */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-surface);
+}
+
+/* Top bar same as RoutePage */
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 16px var(--space-md);
+  background: white;
+  border-bottom: 1px solid var(--color-surface-3);
+}
+
+.backBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.backBtn:active {
+  background: var(--color-surface-3);
+}
+
+.topBarTitle {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* ---- CONFIRMATION SCREEN ---- */
+.confirmScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Destination photo — full width, takes most of screen */
+.destinationImage {
+  width: 100%;
+  height: 55vh;
+  object-fit: cover;
+  display: block;
+}
+
+.noPhoto {
+  height: 55vh;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-pale),
+    var(--color-accent-pale)
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 80px;
+}
+
+/* Bottom confirmation panel */
+.confirmPanel {
+  flex: 1;
+  padding: var(--space-xl) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  animation: fadeUp 0.3s ease both;
+}
+
+.confirmQuestion {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.confirmSubtext {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-3);
+  text-align: center;
+  line-height: 1.5;
+  margin-top: -8px;
+}
+
+.confirmButtons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: auto;
+}
+
+.btnYes {
+  padding: 16px;
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-accent)
+  );
+  color: white;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.3);
+  transition: all var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.btnYes:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.2);
+}
+
+.btnNo {
+  padding: 14px;
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--color-surface-3);
+  transition: all var(--transition);
+  cursor: pointer;
+}
+
+.btnNo:active {
+  background: var(--color-surface-3);
+}
+
+/* ---- ARRIVED SCREEN ---- */
+.arrivedScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl) var(--space-lg);
+  text-align: center;
+  gap: var(--space-lg);
+  animation: fadeUp 0.4s ease both;
+}
+
+.arrivedIcon {
+  font-size: 72px;
+  animation: fadeIn 0.5s ease 0.1s both;
+}
+
+.arrivedTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.arrivedDestination {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.arrivedSubtext {
+  font-size: var(--font-size-md);
+  color: var(--color-text-3);
+  line-height: 1.6;
+}
+
+.homeBtn {
+  margin-top: var(--space-md);
+  padding: 16px var(--space-2xl);
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-accent)
+  );
+  color: white;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.3);
+  transition: all var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.homeBtn:active {
+  transform: scale(0.98);
+}

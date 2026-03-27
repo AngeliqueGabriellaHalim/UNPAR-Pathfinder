@@ -1,0 +1,203 @@
+/* ============================================================
+   src/styles/global.css
+   GLOBAL STYLES & CSS VARIABLES
+
+   We use CSS Custom Properties (variables) for the entire
+   color palette and spacing system. This means:
+   - Change one variable → updates everywhere
+   - No need for a CSS-in-JS library or Tailwind
+   - Works perfectly with Vite's CSS module system
+
+   DESIGN DIRECTION:
+   Warm light theme. Indigo-violet as primary, warm beige/cream
+   as surface. Feels institutional but approachable — like a
+   well-designed university wayfinding system.
+   Font: Outfit (geometric, friendly, readable at all ages)
+   ============================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap");
+
+:root {
+  /* --- COLOR PALETTE --- */
+
+  /* Primary: deep indigo-violet, NOT the generic Canva purple */
+  --color-primary: #4338ca; /* indigo-700 */
+  --color-primary-light: #6366f1; /* indigo-500 */
+  --color-primary-pale: #eef2ff; /* indigo-50 */
+  --color-primary-mid: #c7d2fe; /* indigo-200 */
+
+  /* Accent: warm slate-blue for depth */
+  --color-accent: #7c3aed; /* violet-600 */
+  --color-accent-pale: #f5f3ff; /* violet-50 */
+
+  /* Surface: warm whites, not pure white (easier on eyes) */
+  --color-surface: #fafaf8; /* off-white warm */
+  --color-surface-2: #f4f3ef; /* warm beige */
+  --color-surface-3: #e9e7e1; /* darker beige for borders */
+
+  /* Text */
+  --color-text: #1e1b2e; /* near-black with violet tint */
+  --color-text-2: #4b4869; /* secondary text */
+  --color-text-3: #9491b0; /* placeholder/muted */
+
+  /* Semantic */
+  --color-success: #059669;
+  --color-success-pale: #ecfdf5;
+  --color-warning: #d97706;
+  --color-warning-pale: #fffbeb;
+  --color-danger: #dc2626;
+  --color-danger-pale: #fef2f2;
+
+  /* --- SPACING --- */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* --- BORDER RADIUS --- */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  /* --- SHADOWS --- */
+  --shadow-sm:
+    0 1px 3px rgba(67, 56, 202, 0.08), 0 1px 2px rgba(67, 56, 202, 0.04);
+  --shadow-md:
+    0 4px 16px rgba(67, 56, 202, 0.1), 0 2px 6px rgba(67, 56, 202, 0.06);
+  --shadow-lg:
+    0 8px 32px rgba(67, 56, 202, 0.14), 0 4px 12px rgba(67, 56, 202, 0.08);
+
+  /* --- TYPOGRAPHY --- */
+  --font: "Outfit", system-ui, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+
+  /* --- TRANSITIONS --- */
+  --transition: 0.2s ease;
+
+  /* --- MOBILE MAX WIDTH --- */
+  /* App is mobile-first, max 430px centered on desktop */
+  --max-width: 430px;
+}
+
+/* --- RESET --- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  min-height: 100vh;
+  /* Center the mobile app on desktop */
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: var(--max-width);
+  min-height: 100vh;
+  background: var(--color-surface);
+  position: relative;
+  /* Subtle shadow on desktop to look like a phone */
+  box-shadow: 0 0 60px rgba(67, 56, 202, 0.12);
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input,
+select,
+textarea {
+  font-family: var(--font);
+  outline: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Slide in from right (for navigation between steps) */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

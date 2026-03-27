@@ -1,0 +1,251 @@
+/* src/pages/RoutePage.module.css */
+/* Step-by-step navigation page */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-surface);
+}
+
+/* ---- TOP BAR ---- */
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 16px var(--space-md);
+  background: white;
+  border-bottom: 1px solid var(--color-surface-3);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.backBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: var(--color-text);
+  flex-shrink: 0;
+  transition: background var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.backBtn:active {
+  background: var(--color-surface-3);
+}
+
+.topBarInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.topBarDestination {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topBarStep {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-3);
+  margin-top: 1px;
+}
+
+/* ---- PROGRESS BAR ---- */
+.progressBar {
+  height: 3px;
+  background: var(--color-surface-3);
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  transition: width 0.4s ease;
+}
+
+/* ---- MAIN CONTENT — IMAGE AREA ---- */
+.imageArea {
+  flex: 1;
+  position: relative;
+  background: #1a1825;
+  /* Fixed height so nav bar always stays at bottom */
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stepImage {
+  width: 100%;
+  /* Takes most of the screen */
+  height: calc(100vh - 220px);
+  object-fit: cover;
+  display: block;
+}
+
+.noImage {
+  height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.noImageIcon {
+  font-size: 48px;
+  opacity: 0.4;
+}
+
+.noImageText {
+  font-size: var(--font-size-sm);
+}
+
+/* Image counter badge (e.g. "2 / 4") */
+.imageCounter {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* ---- BOTTOM PANEL ---- */
+.bottomPanel {
+  background: white;
+  border-top: 1px solid var(--color-surface-3);
+  padding: var(--space-md) var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Petunjuk text */
+.petunjuk {
+  font-size: var(--font-size-md);
+  color: var(--color-text);
+  line-height: 1.6;
+  font-weight: 400;
+  min-height: 44px;
+}
+
+.petunjukEmpty {
+  color: var(--color-text-3);
+  font-style: italic;
+}
+
+/* Navigation buttons row */
+.navRow {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.navBtn {
+  flex: 1;
+  padding: 14px var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  transition: all var(--transition);
+  border: none;
+  cursor: pointer;
+}
+
+.navBtnBack {
+  background: var(--color-surface-2);
+  color: var(--color-text-2);
+  border: 1.5px solid var(--color-surface-3);
+}
+
+.navBtnBack:active {
+  background: var(--color-surface-3);
+}
+
+.navBtnNext {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-accent)
+  );
+  color: white;
+  box-shadow: 0 4px 16px rgba(67, 56, 202, 0.3);
+}
+
+.navBtnNext:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(67, 56, 202, 0.2);
+}
+
+.navBtnDisabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---- LOADING STATE ---- */
+.loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  color: var(--color-text-3);
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--color-surface-3);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ---- ERROR STATE ---- */
+.errorBox {
+  margin: var(--space-xl) var(--space-lg);
+  padding: var(--space-lg);
+  background: var(--color-danger-pale);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.errorTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-danger);
+  margin-bottom: var(--space-sm);
+}
+
+.errorText {
+  font-size: var(--font-size-sm);
+  color: #b91c1c;
+  line-height: 1.5;
+}
+
+.retryBtn {
+  margin-top: var(--space-md);
+  padding: 10px 24px;
+  background: var(--color-danger);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
