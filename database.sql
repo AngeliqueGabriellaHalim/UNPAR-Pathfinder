@@ -4,8 +4,8 @@ CREATE TABLE node (
   id SERIAL PRIMARY KEY,
   nama VARCHAR(100) NOT NULL,
 
-  -- TRUE = tangga (stairs), FALSE = lantai/lift
-  istangga BOOLEAN NOT NULL,
+  -- LANTAI=0, lift = 2, tangga=1
+  tipe SMALLINT NOT NULL,
 
   -- coordinates for A*
   x FLOAT NOT NULL,
@@ -64,18 +64,18 @@ CREATE INDEX idx_edge_to   ON edge(to_id);
 
 -- OPTIONAL: add comments (very recommended)
 
-COMMENT ON COLUMN node.istangga IS 'TRUE = tangga, FALSE = lantai/lift';
+COMMENT ON COLUMN node.tipe IS '0 = lantai, 1 = tangga, 2 = lift';
 COMMENT ON COLUMN edge.accessible IS '0 = tidak, 1 = mandiri, 2 = butuh bantuan';
 
 
 -- IMPORT DATA
 
-COPY node (id, nama, istangga, x, y, is_destination)
+COPY node (id, nama, tipe, x, y, is_destination)
 FROM 'D:\angie\unpar\TA\node(1).csv'
 DELIMITER ','
 CSV HEADER;
 
-COPY edge (from_id, to_id, accessible, petunjuk, weight)
+COPY edge (from_id, to_id, accessible, weight)
 FROM 'D:\angie\unpar\TA\edge(1).csv'
 DELIMITER ','
 CSV HEADER;
@@ -89,10 +89,10 @@ SELECT setval('edge_id_seq', (SELECT MAX(id) FROM edge));
 
 -- SAMPLE INSERT
 
-INSERT INTO edge (from_id, to_id, accessible, petunjuk, weight) VALUES
-  (6, 70, 1, 'barat', 22.0),
-  (5, 70, 2, '5 barat 10 utara', 15.0),
-  (10, 70, 1, '3 selatan 10 barat', 13.0),
-  (70, 6, 1, '', 22.0),
-  (70, 5, 2, '', 15.0),
-  (70, 10, 1, '', 13.0);
+INSERT INTO edge (from_id, to_id, accessible, weight) VALUES
+  (6, 70, 1, 22.0),
+  (5, 70, 2, 15.0),
+  (10, 70, 1, 13.0),
+  (70, 6, 1, 22.0),
+  (70, 5, 2, 15.0),
+  (70, 10, 1, 13.0);
