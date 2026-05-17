@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --font-family-display: "Sora", system-ui, sans-serif;
+  --font-family-body: "DM Sans", system-ui, sans-serif;
+
+  --color-primary: #5c0fe1;
+  --color-primary-dark: #3b1edf;
+  --color-primary-soft: #f1ebff;
+  --color-primary-mid: #cdb7ff;
+
+  --color-accent: #7900e2;
+  --color-accent-soft: #f5ecff;
+
+  --color-surface: #fafaf8;
+  --color-surface-2: #f2f1ed;
+  --color-surface-3: #e4e2db;
+
+  --color-ink: #1c1a2e;
+  --color-ink-2: #4a4769;
+  --color-ink-3: #9491b4;
+
+  --color-success: #059669;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+}
+
+html {
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: #f2f1ed;
+  color: #1c1a2e;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+#root {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  background: #fafaf8;
+  box-shadow: 0 0 60px rgba(79, 70, 229, 0.1);
+  position: relative;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
