@@ -25,6 +25,7 @@ function isRushHour() {
     [9 * 60 + 30, 10 * 60 + 10], // 09:30 – 10:10
     [11 * 60 + 40, 12 * 60 + 20], // 11:40 – 12:20
     [12 * 60 + 40, 13 * 60 + 10], // 12:40 – 13:10
+    [17 * 60 + 3, 17 * 60 + 4],
   ];
 
   return rushWindows.some(
@@ -63,12 +64,12 @@ async function buildGraph() {
     if (graph[String(edge.from_id)]) {
       const fromNode = graph[String(edge.from_id)];
       const toNode = graph[String(edge.to_id)];
-      const isLiftEdge = fromNode?.tipe === 2 && toNode?.tipe === 2;
-      const rushPenalty = rushHour && isLiftEdge ? 2 : 1;
+      const isWaitingLift = fromNode?.tipe === 0 && toNode?.tipe === 2;
+      const rushPenalty = rushHour && isWaitingLift ? 25 * 15 : 0;
 
       graph[String(edge.from_id)].neighbors.push({
         toId: edge.to_id,
-        weight: parseFloat(edge.weight) * rushPenalty,
+        weight: parseFloat(edge.weight) + rushPenalty,
         accessible: edge.accessible,
       });
     }
@@ -121,7 +122,7 @@ router.get("/route/all", async (req, res) => {
   if (from === to)
     return res
       .status(400)
-      .json({ error: "from and cannot be the same location" });
+      .json({ error: "from and to cannot be the same location" });
   try {
     const graph = await buildGraph();
     const fromId = String(from);
@@ -135,7 +136,6 @@ router.get("/route/all", async (req, res) => {
       {
         key: "none",
         filter: () => true,
-        fallback: false,
       },
       {
         key: "tangga",
@@ -144,7 +144,6 @@ router.get("/route/all", async (req, res) => {
           const t = graph[String(edge.toId)];
           return t && t.tipe !== 2;
         },
-        fallback: true,
       },
       {
         key: "lift",
@@ -153,12 +152,10 @@ router.get("/route/all", async (req, res) => {
           const t = graph[String(edge.toId)];
           return t && t.tipe !== 1;
         },
-        fallback: true,
       },
       {
         key: "disabilitas",
         filter: (edge) => edge.accessible === 1 || edge.accessible === 2,
-        fallback: false,
       },
     ];
 
@@ -166,8 +163,6 @@ router.get("/route/all", async (req, res) => {
 
     for (const p of priorities) {
       let result = astar(graph, fromId, toId, p.filter);
-      if (!result && p.fallback)
-        result = astar(graph, fromId, toId, () => true);
 
       if (!result) {
         results[p.key] = null;
@@ -217,6 +212,11 @@ router.get("/route", async (req, res) => {
       .status(400)
       .json({ error: "from, to, and priority are required" });
   }
+  if (from === to) {
+    return res
+      .status(400)
+      .json({ error: "Lokasi awal dan tujuan tidak boleh sama" });
+  }
 
   try {
     const graph = await buildGraph();
@@ -230,7 +230,6 @@ router.get("/route", async (req, res) => {
     // FILTER
     //use tipe: 0=lantai, 1=tangga, 2=lift.
     let filterEdge;
-    let useFallback = false;
 
     if (priority === "none") {
       filterEdge = () => true;
@@ -240,14 +239,12 @@ router.get("/route", async (req, res) => {
         const t = graph[String(edge.toId)];
         return t && t.tipe !== 2;
       };
-      useFallback = true;
     } else if (priority === "lift") {
       // Block tangga nodes (tipe=1), allow lantai(0) and lift(2)
       filterEdge = (edge) => {
         const t = graph[String(edge.toId)];
         return t && t.tipe !== 1;
       };
-      useFallback = true;
     } else if (priority === "disabilitas") {
       filterEdge = (edge) => edge.accessible === 1 || edge.accessible === 2;
     } else {
@@ -256,7 +253,6 @@ router.get("/route", async (req, res) => {
 
     // A*
     let result = astar(graph, fromId, toId, filterEdge);
-    if (!result && useFallback) result = astar(graph, fromId, toId, () => true);
 
     if (!result) {
       return res.status(404).json({

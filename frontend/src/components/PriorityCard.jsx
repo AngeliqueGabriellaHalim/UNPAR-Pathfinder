@@ -122,7 +122,7 @@ export default function PriorityCard({
             : "border-surface-3 bg-white active:bg-surface-2",
       ].join(" ")}
     >
-      {/* Icon pill :  colored per priority */}
+      {/* Icon :  colored per priority */}
       <span
         className={[
           "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",

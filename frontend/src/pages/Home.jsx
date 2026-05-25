@@ -184,8 +184,7 @@ export default function Home() {
       });
   }, [from, to]);
 
-  const isDisabled = (key) =>
-    key === "disabilitas" && routeData !== null && !routeData[key];
+  const isDisabled = (key) => routeData !== null && !routeData[key];
   const canSubmit = //required fields
     from && to && from !== to && priority && !isDisabled(priority);
 
@@ -272,7 +271,7 @@ export default function Home() {
         <div className="mb-6">
           <SearchDropdown
             label="Ke mana?"
-            nodes={destNodes}
+            nodes={destNodes.filter((node) => String(node.id) !== String(from))}
             value={to}
             onChange={setTo}
             placeholder="Pilih tujuan..."
