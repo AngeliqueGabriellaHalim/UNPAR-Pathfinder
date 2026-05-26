@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getRoute } from "../services/api.js";
+import {
+  House,
+  ArrowRight,
+  ArrowLeft,
+  Flag,
+  TriangleAlert,
+  SquareParking,
+  Image as ImageIcon,
+} from "lucide-react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-console.log("BACKEND_URL:", BACKEND_URL);
 
 // to handles paths with or without leading slash
 const imgUrl = (path) => {
@@ -11,8 +19,7 @@ const imgUrl = (path) => {
   return BACKEND_URL + (path.startsWith("/") ? path : "/" + path);
 };
 
-// SVG ICONS
-// All from Lucide Icons (lucide.dev), inlined as JSx
+// SVG ICONS from lucide
 const IconHome = () => (
   <svg
     viewBox="0 0 24 24"
@@ -317,7 +324,7 @@ export default function RoutePage() {
         nodes,
         toName,
         result,
-        confirmationImage: result.confirmationImage,
+        confirmationImages: result.confirmationImages,
       },
     });
   };
@@ -421,17 +428,11 @@ export default function RoutePage() {
             </p>
           </div>
         )}
-        {/* Image counter */}
-        {/* {images.length > 1 && (
-          <div className="absolute top-3 right-3 bg-black/55 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
-            {imageIndex + 1} / {images.length}
-          </div>
-        )} */}
       </div>
 
       {/* BOTTOM PANEL */}
       <div className="bg-white px-5 pt-4 pb-6 flex flex-col gap-4">
-        {/* 3. Petunjuk text  centered */}
+        {/*Petunjuk text  centered */}
         <p
           className={[
             "text-base leading-relaxed min-h-11 text-center",

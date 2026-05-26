@@ -52,7 +52,6 @@ const IconCheck = () => (
   </svg>
 );
 
-// Flag icon:  used before location name in the confirm panel
 const IconFlag = () => (
   <svg
     viewBox="0 0 24 24"
@@ -87,14 +86,19 @@ const IconBuilding = () => (
 export default function ConfirmPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { from, to, priority, nodes, toName, result, confirmationImage } =
+  const { from, to, priority, nodes, toName, result, confirmationImages } =
     state || {};
   const [arrived, setArrived] = useState(false);
+  const [imgIndex, setImgIndex] = useState(0);
 
   const steps = result?.steps || [];
 
   const destName =
     toName || nodes?.find((n) => Number(n.id) === Number(to))?.nama || "Tujuan";
+
+  // array foto konfirmasi (bisa 1 atau lebih)
+  const images = confirmationImages || [];
+  const hasMultiple = images.length > 1;
 
   const handleNo = () => {
     const lastStep = steps[steps.length - 1];
@@ -202,12 +206,14 @@ export default function ConfirmPage() {
       </div>
 
       {/* Destination photo */}
-      {confirmationImage ? (
+      {images.length > 0 ? (
         <div className="relative" style={{ height: "52vh" }}>
           <img
-            src={imgUrl(confirmationImage)}
-            alt={destName}
+            key={imgIndex}
+            src={imgUrl(images[imgIndex])}
+            alt={`${destName} foto ${imgIndex + 1}`}
             className="w-full h-full object-cover"
+            style={{ animation: "fadeIn 0.2s ease both" }}
           />
           <div
             className="absolute inset-x-0 bottom-0 h-28"
@@ -216,6 +222,56 @@ export default function ConfirmPage() {
                 "linear-gradient(to top, rgba(0,0,0,0.55), transparent)",
             }}
           />
+
+          {/* Arrow buttons for multiple photos */}
+          {hasMultiple && (
+            <>
+              {/* Left arrow */}
+              {imgIndex > 0 && (
+                <button
+                  onClick={() => setImgIndex((i) => i - 1)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/60 transition-colors"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Right arrow */}
+              {imgIndex < images.length - 1 && (
+                <button
+                  onClick={() => setImgIndex((i) => i + 1)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/60 transition-colors"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-5 h-5"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Photo counter */}
+              <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
+                {imgIndex + 1} / {images.length}
+              </div>
+            </>
+          )}
         </div>
       ) : (
         <div

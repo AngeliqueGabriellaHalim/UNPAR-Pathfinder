@@ -25,7 +25,7 @@ function isRushHour() {
     [9 * 60 + 30, 10 * 60 + 10], // 09:30 – 10:10
     [11 * 60 + 40, 12 * 60 + 20], // 11:40 – 12:20
     [12 * 60 + 40, 13 * 60 + 10], // 12:40 – 13:10
-    [17 * 60 + 3, 17 * 60 + 4],
+    // [22 * 60 + 31, 22 * 60 + 32],
   ];
 
   return rushWindows.some(
@@ -65,7 +65,18 @@ async function buildGraph() {
       const fromNode = graph[String(edge.from_id)];
       const toNode = graph[String(edge.to_id)];
       const isWaitingLift = fromNode?.tipe === 0 && toNode?.tipe === 2;
-      const rushPenalty = rushHour && isWaitingLift ? 25 * 15 : 0;
+
+      let rushPenalty = 0;
+      if (rushHour && isWaitingLift) {
+        const liftName = toNode.nama.toLowerCase();
+        if (liftName.includes("gedung 9")) {
+          // Gedung 9: worst case 18 lantai × 20 detik
+          rushPenalty = 18 * 20;
+        } else if (liftName.includes("ppag")) {
+          // PPAG: worst case 29 lantai × 15 detik
+          rushPenalty = 29 * 15;
+        }
+      }
 
       graph[String(edge.from_id)].neighbors.push({
         toId: edge.to_id,
@@ -272,7 +283,11 @@ router.get("/route", async (req, res) => {
 
     const pathStr = pathNodes.map((n) => n.nama).join(" -> ");
     const lastNodeId = result.path[result.path.length - 1];
-    const confirmationImage = graph[lastNodeId]?.confirmation_image || null;
+    // get confirmation image(s): split comma-separated confirmation images into array
+    const rawConfirmImg = graph[lastNodeId]?.confirmation_image || null;
+    const confirmationImages = rawConfirmImg
+      ? rawConfirmImg.split(",").map((s) => s.trim())
+      : [];
 
     // EDGE PAIRS
     const edgePairs = [];
@@ -314,7 +329,7 @@ router.get("/route", async (req, res) => {
     }
 
     // BUILD STEPS WITH LIFT COLLAPSING
-    // Consecutive lift-touching edges are collapsed into one step.
+    // Consecutive lift edges are collapsed into one step.
     // The petunjuk for that step is generated dynamically:
     // "Masuk lift, tekan tombol lantai [lantai_label]"
     const steps = [];
@@ -382,7 +397,7 @@ router.get("/route", async (req, res) => {
       cost: result.cost,
       path: pathNodes,
       steps,
-      confirmationImage,
+      confirmationImages,
     });
   } catch (err) {
     console.error("Error in /route:", err);

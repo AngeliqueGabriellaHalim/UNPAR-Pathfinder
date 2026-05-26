@@ -49,7 +49,6 @@ const IconElevator = ({ className = "w-4 h-4" }) => (
   </svg>
 );
 
-// Magnifying glass: shown in the search input row
 const IconSearch = ({ className = "w-4 h-4" }) => (
   <svg
     viewBox="0 0 24 24"
@@ -94,6 +93,7 @@ const IconChevron = ({ className = "w-4 h-4" }) => (
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
+
 //getNodeIcon(tipe, className)
 // Returns the correct icon component for a node type
 function getNodeIcon(tipe, className) {
@@ -159,13 +159,9 @@ export default function SearchDropdown({
         </span>
       )}
 
-      {/* 
-          Looks like an input field but is a <button>
-
-          Because clicking it should toggle the dropdown, not let the user type directly
-
-          The actual typing happens inside the dropdown panel below.
-      */}
+      {/*Looks like an input field but is a <button>
+          clicking it should toggle the dropdown,
+          TTyping happens inside the dropdown panel below.*/}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -210,10 +206,8 @@ export default function SearchDropdown({
           style={{ animation: "fadeUp 0.15s ease both" }}
         >
           {/* A real text <input> for filtering the list.
-
               autoFocus = browser automatically focuses this element when
-              the dropdown opens, so user can start typing immediately
-              without an extra tap.*/}
+              the dropdown opens, so user can start typing immediately without needing to tap the field*/}
           <div className="flex items-center gap-2 px-4 py-2.5 border-b border-surface-3">
             <span className="text-ink-3 shrink-0">
               <IconSearch className="w-4 h-4" />
@@ -246,7 +240,7 @@ export default function SearchDropdown({
                   className={[
                     "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors",
                     "border-b border-surface-2 last:border-none",
-                    // Highlight currently selected item with indigo tint
+                    // Highlight currently selected item
                     node.id === value
                       ? "bg-primary-soft"
                       : "active:bg-primary-soft",

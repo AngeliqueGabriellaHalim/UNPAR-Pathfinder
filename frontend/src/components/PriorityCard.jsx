@@ -67,7 +67,7 @@ const ICON_MAP = {
   disabilitas: Icons.wheelchair,
 };
 
-// Accent colors per priority :  used for the icon container bg and selected state
+// Accent colors per priority
 const COLOR_MAP = {
   none: {
     bg: "bg-indigo-50",
