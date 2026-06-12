@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import {
+  IconHome,
+  IconCheck,
+  IconBack,
+  IconDest,
+  IconNext,
+  IconFlag,
+} from "../components/Icons.jsx";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -7,81 +15,6 @@ const imgUrl = (path) => {
   if (!path) return null;
   return BACKEND_URL + (path.startsWith("/") ? path : "/" + path);
 };
-
-const IconHome = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4"
-  >
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-    <polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const IconBack = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4"
-  >
-    <line x1="19" y1="12" x2="5" y2="12" />
-    <polyline points="12 19 5 12 12 5" />
-  </svg>
-);
-
-const IconCheck = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-5 h-5"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-const IconFlag = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4 text-primary shrink-0"
-  >
-    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-    <line x1="4" y1="22" x2="4" y2="15" />
-  </svg>
-);
-
-const IconBuilding = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-16 h-16 text-indigo-200"
-  >
-    <rect x="3" y="3" width="18" height="18" rx="1" />
-    <path d="M9 22V12h6v10" />
-    <path d="M9 7h.01M12 7h.01M15 7h.01M9 11h.01M12 11h.01M15 11h.01" />
-  </svg>
-);
 
 export default function ConfirmPage() {
   const navigate = useNavigate();
@@ -119,7 +52,7 @@ export default function ConfirmPage() {
   // ARRIVED SCREEN
   if (arrived)
     return (
-      <div className="flex flex-col min-h-screen bg-surface">
+      <div className="flex flex-col h-dvh bg-surface">
         <div
           className="flex items-center gap-3 px-4 py-3"
           style={{ background: "linear-gradient(150deg, #3B1EDF, #5C0FE1)" }}
@@ -186,7 +119,7 @@ export default function ConfirmPage() {
 
   // CONFIRM SCREEN
   return (
-    <div className="flex flex-col min-h-screen bg-surface">
+    <div className="flex flex-col h-dvh bg-surface">
       <div
         className="flex items-center gap-3 px-4 py-3"
         style={{ background: "linear-gradient(135deg, #3B1EDF, #5C0FE1)" }}
@@ -207,7 +140,7 @@ export default function ConfirmPage() {
 
       {/* Destination photo */}
       {images.length > 0 ? (
-        <div className="relative" style={{ height: "52vh" }}>
+        <div className="relative h-[50dvh]">
           <img
             key={imgIndex}
             src={imgUrl(images[imgIndex])}
@@ -223,53 +156,28 @@ export default function ConfirmPage() {
             }}
           />
 
-          {/* Arrow buttons for multiple photos */}
+          {/* arrow buttons for multiple photos */}
           {hasMultiple && (
             <>
-              {/* Left arrow */}
+              {/* left arrow */}
               {imgIndex > 0 && (
                 <button
                   onClick={() => setImgIndex((i) => i - 1)}
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/60 transition-colors"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="w-5 h-5"
-                  >
-                    <polyline points="15 18 9 12 15 6" />
-                  </svg>
+                  <IconBack />
                 </button>
               )}
 
-              {/* Right arrow */}
+              {/* right arrow */}
               {imgIndex < images.length - 1 && (
                 <button
                   onClick={() => setImgIndex((i) => i + 1)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white active:bg-black/60 transition-colors"
                 >
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="w-5 h-5"
-                  >
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
+                  <IconNext />
                 </button>
               )}
-
-              {/* Photo counter */}
-              <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
-                {imgIndex + 1} / {images.length}
-              </div>
             </>
           )}
         </div>
@@ -281,20 +189,19 @@ export default function ConfirmPage() {
             background: "linear-gradient(150deg, #EEF2FF 0%, #E0E7FF 100%)",
           }}
         >
-          <IconBuilding />
+          <IconFlag />
           <p className="text-sm text-indigo-400 font-medium">{destName}</p>
         </div>
       )}
 
-      {/* Bottom panel */}
+      {/* bottom panel */}
       <div
         className="flex-1 px-6 pt-6 pb-8 flex flex-col gap-4"
         style={{ animation: "fadeUp 0.3s ease both" }}
       >
         <div className="text-center flex flex-col items-center gap-2">
-          {/* Location name with flag icon */}
           <div className="flex items-center gap-2 justify-center">
-            <IconFlag />
+            <IconDest className="text-primary w-4 h-4" />
             <p
               className="font-semibold text-primary text-sm"
               style={{ fontFamily: "var(--font-family-display)" }}
@@ -303,10 +210,8 @@ export default function ConfirmPage() {
             </p>
           </div>
 
-          {/* Divider */}
           <div className="w-8 h-px bg-surface-3" />
 
-          {/* Question */}
           <p
             className="text-xl font-bold text-ink leading-snug"
             style={{ fontFamily: "var(--font-family-display)" }}

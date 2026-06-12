@@ -1,73 +1,18 @@
-const Icons = {
-  flash: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-    </svg>
-  ),
-  stairs: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <polyline points="4 20 4 14 10 14 10 8 16 8 16 4 20 4" />
-    </svg>
-  ),
-  elevator: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <rect x="3" y="2" width="18" height="20" rx="2" />
-      <line x1="12" y1="2" x2="12" y2="22" />
-      <polyline points="7 8 9.5 5.5 12 8" />
-      <polyline points="12 16 14.5 18.5 17 16" />
-    </svg>
-  ),
-  wheelchair: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="w-5 h-5"
-    >
-      <circle cx="12" cy="4" r="1.5" />
-      <path d="M9 9h4l1 5h3" />
-      <path d="M9 9l-1 5h5" />
-      <circle cx="10" cy="19" r="2.5" />
-      <circle cx="17" cy="19" r="2.5" />
-    </svg>
-  ),
-};
+import {
+  IconFlash,
+  IconStairs,
+  IconElevator,
+  IconWheelchair,
+} from "../components/Icons.jsx";
 
 const ICON_MAP = {
-  none: Icons.flash,
-  tangga: Icons.stairs,
-  lift: Icons.elevator,
-  disabilitas: Icons.wheelchair,
+  none: <IconFlash />,
+  tangga: <IconStairs />,
+  lift: <IconElevator />,
+  disabilitas: <IconWheelchair />,
 };
 
-// Accent colors per priority
+// accent colors per priority
 const COLOR_MAP = {
   none: {
     bg: "bg-indigo-50",
@@ -141,7 +86,7 @@ export default function PriorityCard({
           {label}
         </p>
         <p className={`text-xs ${selected ? "text-ink-2" : "text-ink-3"}`}>
-          {disabled ? "Tidak ada jalur accessible" : (duration ?? desc)}
+          {disabled ? "Tidak ada jalur ditemukan" : (duration ?? desc)}
         </p>
       </div>
     </button>

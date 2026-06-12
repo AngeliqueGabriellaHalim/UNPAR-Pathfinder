@@ -8,6 +8,14 @@ import {
   getAllRoutes,
 } from "../services/api.js";
 
+import {
+  IconArrowDown,
+  IconBan,
+  IconWarning,
+  IconParking,
+  IconArrowRight,
+} from "../components/Icons.jsx";
+
 const PRIORITIES = [
   { key: "none", label: "Tercepat", desc: "Rute paling efisien" },
   { key: "tangga", label: "Tangga", desc: "Lewat tangga" },
@@ -28,97 +36,6 @@ function formatDuration(seconds) {
   return `${m} menit ${s} detik`;
 }
 
-const IconMapPin = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4 text-white/60 shrink-0"
-  >
-    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-    <circle cx="12" cy="10" r="3" />
-  </svg>
-);
-
-const IconArrowDown = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-3.5 h-3.5 text-ink-2"
-  >
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <polyline points="19 12 12 19 5 12" />
-  </svg>
-);
-
-const IconArrowRight = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4"
-  >
-    <line x1="5" y1="12" x2="19" y2="12" />
-    <polyline points="12 5 19 12 12 19" />
-  </svg>
-);
-
-const IconWarning = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4 shrink-0 mt-0.5"
-  >
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-    <line x1="12" y1="9" x2="12" y2="13" />
-    <line x1="12" y1="17" x2="12.01" y2="17" />
-  </svg>
-);
-
-const IconBan = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4 shrink-0 mt-0.5"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-  </svg>
-);
-
-const IconParking = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="w-4 h-4 shrink-0 mt-0.5"
-  >
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="M9 17V7h4a3 3 0 0 1 0 6H9" />
-  </svg>
-);
-
 export default function Home() {
   const navigate = useNavigate();
   const [nodes, setNodes] = useState([]); //from nodes
@@ -133,7 +50,7 @@ export default function Home() {
     const urlParams = new URLSearchParams(window.location.search);
     const fromUrl = urlParams.get("from");
     if (fromUrl && !isNaN(Number(fromUrl))) {
-      // QR code URL has a valid node ID, then  use it and persist it
+      // QR code URL has a valid node ID, then  use it
       sessionStorage.setItem("pf_from", fromUrl);
       return Number(fromUrl);
     }
@@ -172,7 +89,7 @@ export default function Home() {
         setEstimating(false);
         if (!data.disabilitas) {
           setWarning(
-            "Tidak ada jalur accessible untuk rute ini. Pilihan Disabilitas tidak tersedia.",
+            "Tidak ada jalur accessible untuk rute ini. Pilihan Keterbatasan Mobilitas tidak tersedia.",
           );
         } else {
           setWarning("");
@@ -198,11 +115,9 @@ export default function Home() {
             "linear-gradient(150deg, #3B1EDF 0%, #5C0FE1 65%, #7900E2 100%)",
         }}
       >
-        {/* //decorations in header */}
         <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full border-[1.5px] border-white/10 pointer-events-none" />
         <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full border-[1.5px] border-white/10 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-full h-px bg-white/10 pointer-events-none" />
-
         {/* logo */}
         <div className="absolute top-0 right-4  flex items-center">
           <img
@@ -221,7 +136,6 @@ export default function Home() {
             UNPAR Campus Navigator
           </span>
         </div>
-
         <h1
           className="text-white text-[26px] font-bold leading-snug mb-1.5"
           style={{ fontFamily: "var(--font-family-display)" }}
@@ -237,12 +151,10 @@ export default function Home() {
         </p>
       </div>
 
-      {/*  FORM CARD  */}
       <div
         className="flex-1 bg-surface rounded-t-3xl -mt-5 px-5 pt-6 pb-10"
         style={{ animation: "fadeUp 0.3s ease both" }}
       >
-        {/* Location section label */}
         <p className="text-xs font-bold text-ink-3 uppercase tracking-widest mb-3">
           Tentukan rute
         </p>
@@ -258,7 +170,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Swap divider */}
         <div className="flex items-center gap-3 my-2 mb-2">
           <div className="flex-1 h-px bg-surface-3" />
           <div className="w-8 h-8 rounded-full  border-surface-3 shadow-sm flex items-center justify-center">

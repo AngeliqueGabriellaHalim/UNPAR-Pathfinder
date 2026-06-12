@@ -16,7 +16,7 @@ app.use(cors());
 // parse incoming body as json
 app.use(express.json());
 
-// When a browser requests GET /uploads/someimage.jpg, express looks in the "uploads" folder and returns the file
+// when a browser requests GET /uploads/someimage.jpg, express looks in the "uploads" folder and returns the file
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/api", routeRouter);

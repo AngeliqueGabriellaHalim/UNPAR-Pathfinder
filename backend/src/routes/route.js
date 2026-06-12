@@ -1,8 +1,11 @@
+// route.js as Backend API Router
+//  handle graph construction from PostgreSQL, A* pathfinding with four priority filters, lift step collapsing, and route image
+
 // ENDPOINTS:
 //   GET /api/nodes -> all nodes for FROM dropdown (excludes Lift nodes)
 //   GET /api/nodes/destinations -> destination-only nodes for TO dropdown
 //   GET /api/route/all-> A* for all 4 priorities (for Home time estimates)
-//   GET /api/routem -> A* for one priority (full result with steps + images)\
+//   GET /api/route -> A* for one priority (full result with steps + images)\
 
 const express = require("express");
 const router = express.Router();
@@ -25,15 +28,33 @@ function isRushHour() {
     [9 * 60 + 30, 10 * 60 + 10], // 09:30 – 10:10
     [11 * 60 + 40, 12 * 60 + 20], // 11:40 – 12:20
     [12 * 60 + 40, 13 * 60 + 10], // 12:40 – 13:10
-    // [22 * 60 + 31, 22 * 60 + 32],
   ];
-
+  //true if current time is within the rush windows
   return rushWindows.some(
     ([start, end]) => totalMin >= start && totalMin < end,
   );
 }
+//definsi filter edge
+function getFilter(priority, graph) {
+  if (priority === "tangga") {
+    return (edge) => {
+      const t = graph[String(edge.toId)];
+      return t && t.tipe !== 2;
+    };
+  }
+  if (priority === "lift") {
+    return (edge) => {
+      const t = graph[String(edge.toId)];
+      return t && t.tipe !== 1;
+    };
+  }
+  if (priority === "disabilitas") {
+    return (edge) => edge.accessible === 1 || edge.accessible === 2;
+  }
+  return () => true; // "none" atau default
+}
 
-// buildGraph()
+// buildGraph(): queries PostgreSQL for all nodes and edges
 // adjacency list
 //   "1": { id, nama, tipe, lantai, lantai_label, x, y, confirmation_image, neighbors: [...] }
 // tipe: 0=lantai (floor/room), 1=tangga (stairs), 2=lift (elevator)
@@ -47,7 +68,6 @@ async function buildGraph() {
 
   for (const node of nodesRes.rows) {
     graph[String(node.id)] = {
-      // String key : A* returns string IDs in path
       id: node.id,
       nama: node.nama,
       tipe: node.tipe,
@@ -60,6 +80,7 @@ async function buildGraph() {
     };
   }
 
+  //neighbor lists (adjacency list)
   for (const edge of edgesRes.rows) {
     if (graph[String(edge.from_id)]) {
       const fromNode = graph[String(edge.from_id)];
@@ -78,6 +99,8 @@ async function buildGraph() {
         }
       }
 
+      // add edge to from node's neighbor list.
+      //weight includes base travel time + any rush hour penalty.
       graph[String(edge.from_id)].neighbors.push({
         toId: edge.to_id,
         weight: parseFloat(edge.weight) + rushPenalty,
@@ -124,7 +147,9 @@ router.get("/nodes/destinations", async (req, res) => {
 });
 
 // GET /api/route/all?from=1&to=5
-
+//Runs A* for all 4 priority filters
+// return the cost (total seconds) for each.--> for home to display time estimates on PriorityCard
+// checks for hasAssist on the accessible route to trigger warning
 router.get("/route/all", async (req, res) => {
   const { from, to } = req.query;
   if (!from || !to)
@@ -143,40 +168,14 @@ router.get("/route/all", async (req, res) => {
       return res.status(404).json({ error: "Node not found" });
     }
 
-    const priorities = [
-      {
-        key: "none",
-        filter: () => true,
-      },
-      {
-        key: "tangga",
-        // Allow lantai(0) + tangga(1), block lift(2)
-        filter: (edge) => {
-          const t = graph[String(edge.toId)];
-          return t && t.tipe !== 2;
-        },
-      },
-      {
-        key: "lift",
-        // Allow lantai(0) + lift(2), block tangga(1)
-        filter: (edge) => {
-          const t = graph[String(edge.toId)];
-          return t && t.tipe !== 1;
-        },
-      },
-      {
-        key: "disabilitas",
-        filter: (edge) => edge.accessible === 1 || edge.accessible === 2,
-      },
-    ];
-
     const results = {};
 
-    for (const p of priorities) {
-      let result = astar(graph, fromId, toId, p.filter);
+    // run A* once for each priority filter
+    for (const key of ["none", "tangga", "lift", "disabilitas"]) {
+      const result = astar(graph, fromId, toId, getFilter(key, graph));
 
       if (!result) {
-        results[p.key] = null;
+        results[key] = null;
         continue;
       }
 
@@ -185,26 +184,24 @@ router.get("/route/all", async (req, res) => {
         path: result.path.map((id) => graph[id].nama),
       };
 
-      if (p.key === "disabilitas") {
-        const pairs = [];
+      //check if any edge requires assistance, yes --> frontend displays "Sebagian jalur butuh bantuan pendamping."
+      if (key === "disabilitas" && result) {
+        let hasAssist = false;
         for (let i = 0; i < result.path.length - 1; i++) {
-          pairs.push({ from: result.path[i], to: result.path[i + 1] });
+          const fromId = result.path[i];
+          const toId = result.path[i + 1];
+          const edge = graph[fromId].neighbors.find(
+            (e) => String(e.toId) === toId,
+          );
+          if (edge && edge.accessible === 2) {
+            hasAssist = true;
+            break;
+          }
         }
-        const accRes = await Promise.all(
-          pairs.map((pair) =>
-            pool.query(
-              "SELECT accessible FROM edge WHERE from_id = $1 AND to_id = $2",
-              [pair.from, pair.to],
-            ),
-          ),
-        );
-        const accValues = accRes
-          .map((r) => r.rows[0]?.accessible)
-          .filter((v) => v !== undefined);
-        entry.hasAssist = accValues.some((v) => v === 2);
+        entry.hasAssist = hasAssist;
       }
 
-      results[p.key] = entry;
+      results[key] = entry;
     }
 
     res.json(results);
@@ -215,7 +212,8 @@ router.get("/route/all", async (req, res) => {
 });
 
 // GET /api/route?from=1&to=5&priority=lift
-
+// runs A* for a single priority and returns the full route including navigation steps with photos and instructions
+// endpoint called when the user press "Mulai Navigasi"
 router.get("/route", async (req, res) => {
   const { from, to, priority } = req.query;
   if (!from || !to || !priority) {
@@ -240,30 +238,8 @@ router.get("/route", async (req, res) => {
 
     // FILTER
     //use tipe: 0=lantai, 1=tangga, 2=lift.
-    let filterEdge;
-
-    if (priority === "none") {
-      filterEdge = () => true;
-    } else if (priority === "tangga") {
-      // Block lift nodes (tipe=2), allow lantai(0) and tangga(1)
-      filterEdge = (edge) => {
-        const t = graph[String(edge.toId)];
-        return t && t.tipe !== 2;
-      };
-    } else if (priority === "lift") {
-      // Block tangga nodes (tipe=1), allow lantai(0) and lift(2)
-      filterEdge = (edge) => {
-        const t = graph[String(edge.toId)];
-        return t && t.tipe !== 1;
-      };
-    } else if (priority === "disabilitas") {
-      filterEdge = (edge) => edge.accessible === 1 || edge.accessible === 2;
-    } else {
-      filterEdge = () => true;
-    }
-
-    // A*
-    let result = astar(graph, fromId, toId, filterEdge);
+    const filterEdge = getFilter(priority, graph);
+    const result = astar(graph, fromId, toId, filterEdge);
 
     if (!result) {
       return res.status(404).json({
@@ -274,7 +250,7 @@ router.get("/route", async (req, res) => {
       });
     }
 
-    // PATH NODES
+    // PATH NODES: convert A* output (array of string IDs) into readable objects
     const pathNodes = result.path.map((id) => ({
       id: Number(id),
       nama: graph[id].nama,
@@ -289,13 +265,13 @@ router.get("/route", async (req, res) => {
       ? rawConfirmImg.split(",").map((s) => s.trim())
       : [];
 
-    // EDGE PAIRS
+    // EDGE PAIRS: convert path [A, B, C, D] into edge pairs [{A→B}, {B→C}, {C→D}]
     const edgePairs = [];
     for (let i = 0; i < result.path.length - 1; i++) {
       edgePairs.push({ from: result.path[i], to: result.path[i + 1] });
     }
 
-    // FETCH EDGE IDs
+    // FETCH EDGE IDs to lookup foto in db
     const edgeQueryResults = await Promise.all(
       edgePairs.map((pair) =>
         pool.query("SELECT id FROM edge WHERE from_id = $1 AND to_id = $2", [
@@ -318,6 +294,7 @@ router.get("/route", async (req, res) => {
          ORDER BY edge_id, step_order ASC`,
         [edgeIds],
       );
+      // group images by edge_id for fast lookup
       imagesRes.rows.forEach((img) => {
         if (!imagesMap[img.edge_id]) imagesMap[img.edge_id] = [];
         imagesMap[img.edge_id].push({
@@ -329,8 +306,7 @@ router.get("/route", async (req, res) => {
     }
 
     // BUILD STEPS WITH LIFT COLLAPSING
-    // Consecutive lift edges are collapsed into one step.
-    // The petunjuk for that step is generated dynamically:
+    // consecutive lift edges are collapsed into one step
     // "Masuk lift, tekan tombol lantai [lantai_label]"
     const steps = [];
     let i = 0;
@@ -345,17 +321,18 @@ router.get("/route", async (req, res) => {
       const isLiftEdge = fromIsLift || toIsLift;
       if (!fromIsLift && toIsLift) {
         let j = i;
-
+        //scan forward while destination nodes are still elevator type.
         while (j < edgePairs.length && graph[edgePairs[j].to].tipe === 2) {
           j++;
         }
-
+        // j now is first edge AFTER the elevator sequence
+        // edgePairs[j-1].to is the last elevator node (target floor) untuk tombol lift
         const lastLiftPair = edgePairs[j - 1];
         const lastLiftNode = graph[lastLiftPair.to];
 
         const targetFloor =
           lastLiftNode.lantai_label ?? lastLiftNode.lantai ?? "?";
-
+        // use photos from the FIRST edge only
         const firstEdge = edgesData[i];
         const liftImages = firstEdge ? imagesMap[firstEdge.id] || [] : [];
 
@@ -369,9 +346,11 @@ router.get("/route", async (req, res) => {
           isLiftStep: true,
         });
 
+        //lewati merged steps
         i = j;
         continue;
       } else if (fromIsLift && toIsLift) {
+        //safety guard kalau dimulai dari lift tanpa pintu
         i++;
         continue;
       } else {
@@ -393,10 +372,10 @@ router.get("/route", async (req, res) => {
 
     res.json({
       priority,
-      pathStr,
+      pathStr, //path str for debug
       cost: result.cost,
-      path: pathNodes,
-      steps,
+      path: pathNodes, //array of {id, nama, tipe} objects
+      steps, // navigation steps with photos & instructions
       confirmationImages,
     });
   } catch (err) {
