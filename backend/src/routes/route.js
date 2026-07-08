@@ -1,127 +1,151 @@
 // route.js as Backend API Router
-//  handle graph construction from PostgreSQL, A* pathfinding with four priority filters, lift step collapsing, and route image
+// handle graph construction from PostgreSQL, build graph matrix, build navigation steps + photos
 
 // ENDPOINTS:
 //   GET /api/nodes -> all nodes for FROM dropdown (excludes Lift nodes)
 //   GET /api/nodes/destinations -> destination-only nodes for TO dropdown
-//   GET /api/route/all-> A* for all 4 priorities (for Home time estimates)
-//   GET /api/route -> A* for one priority (full result with steps + images)\
+//   GET /api/graph -> kirim matriks graf ke client (A* jalan di client)
+//   GET /api/route/steps -> terima path dari client, balikin langkah + foto
 
 const express = require("express");
 const router = express.Router();
 const pool = require("../db/pool");
-const { astar } = require("../services/astar");
 
-//returns true if current time (WIB = UTC+7) falls within UNPAR rush hours, lift edges are multiplied by 2 to reflect the extra waiting time (queue at lift, slower doors, etc.)
+//returns true if current time (WIB = UTC+7) falls within UNPAR rush hours
 function isRushHour() {
-  //wib = utc+7
   const now = new Date();
   const wibHour = (now.getUTCHours() + 7) % 24;
   const wibMin = now.getUTCMinutes();
-
-  //convert to minute
   const totalMin = wibHour * 60 + wibMin;
-
   // rush hour
   const rushWindows = [
-    [7 * 60 + 30, 8 * 60 + 10], // 07:30 – 08:10
-    [9 * 60 + 30, 10 * 60 + 10], // 09:30 – 10:10
-    [11 * 60 + 40, 12 * 60 + 20], // 11:40 – 12:20
-    [12 * 60 + 40, 13 * 60 + 10], // 12:40 – 13:10
+    [7 * 60 + 30, 8 * 60 + 10], // 07:30 -- 08:10
+    [9 * 60 + 30, 10 * 60 + 10], // 09:30 -- 10:10
+    [11 * 60 + 40, 12 * 60 + 20], // 11:40 -- 12:20
+    [12 * 60 + 40, 13 * 60 + 10], // 12:40 -- 13:10
   ];
-  //true if current time is within the rush windows
+  // true if current time is within the rush windows
   return rushWindows.some(
     ([start, end]) => totalMin >= start && totalMin < end,
   );
 }
-//definsi filter edge
-function getFilter(priority, graph) {
-  if (priority === "tangga") {
-    return (edge) => {
-      const t = graph[String(edge.toId)];
-      return t && t.tipe !== 2;
-    };
-  }
-  if (priority === "lift") {
-    return (edge) => {
-      const t = graph[String(edge.toId)];
-      return t && t.tipe !== 1;
-    };
-  }
-  if (priority === "disabilitas") {
-    return (edge) => edge.accessible === 1 || edge.accessible === 2;
-  }
-  return () => true; // "none" atau default
-}
 
 // buildGraph(): queries PostgreSQL for all nodes and edges
-// adjacency list
-//   "1": { id, nama, tipe, lantai, lantai_label, x, y, confirmation_image, neighbors: [...] }
+// Representasi: ADJACENCY MATRIX
+// - nodeMeta[id]: data simpul (nama, tipe, koordinat, dll)
+// - idList / indexOf: pemetaan id untuk indeks baris/kolom matriks
+// - weightMatrix[i][j]: bobot sisi (null = tidak ada sisi)
+// - accessMatrix[i][j]: nilai accessible sisi
 // tipe: 0=lantai (floor/room), 1=tangga (stairs), 2=lift (elevator)
-
 async function buildGraph() {
   const nodesRes = await pool.query("SELECT * FROM node");
   const edgesRes = await pool.query("SELECT * FROM edge");
   const rushHour = isRushHour();
 
-  const graph = {};
+  const nodeMeta = {}; //complete info tiap node
+  const idList = []; //node id
+  const indexOf = {}; //map node id -> matrix index
 
+  //process every node from database
   for (const node of nodesRes.rows) {
-    graph[String(node.id)] = {
+    const sid = String(node.id);
+
+    //assign each node a matrix index
+    indexOf[sid] = idList.length;
+    idList.push(sid);
+
+    //store node metadata
+    nodeMeta[sid] = {
       id: node.id,
       nama: node.nama,
       tipe: node.tipe,
       lantai: node.lantai,
       lantai_label: node.lantai_label,
-      confirmation_image: node.confirmation_image || null,
+      confirmation_image: node.confirmation_image || [],
       x: parseFloat(node.x),
       y: parseFloat(node.y),
-      neighbors: [],
     };
   }
 
-  //neighbor lists (adjacency list)
+  const n = idList.length; //num of nodes
+
+  const weightMatrix = Array.from({ length: n }, () => new Array(n).fill(null));
+  const accessMatrix = Array.from({ length: n }, () => new Array(n).fill(null));
+
+  //process every edge from db
   for (const edge of edgesRes.rows) {
-    if (graph[String(edge.from_id)]) {
-      const fromNode = graph[String(edge.from_id)];
-      const toNode = graph[String(edge.to_id)];
-      const isWaitingLift = fromNode?.tipe === 0 && toNode?.tipe === 2;
+    const fromSid = String(edge.from_id);
+    const toSid = String(edge.to_id);
+    if (!nodeMeta[fromSid] || !nodeMeta[toSid]) continue;
 
-      let rushPenalty = 0;
-      if (rushHour && isWaitingLift) {
-        const liftName = toNode.nama.toLowerCase();
-        if (liftName.includes("gedung 9")) {
-          // Gedung 9: worst case 18 lantai × 20 detik
-          rushPenalty = 18 * 20;
-        } else if (liftName.includes("ppag")) {
-          // PPAG: worst case 29 lantai × 15 detik
-          rushPenalty = 29 * 15;
-        }
+    const fromNode = nodeMeta[fromSid];
+    const toNode = nodeMeta[toSid];
+
+    //check if edge represent waktu tunggu lift
+    const isWaitingLift = fromNode?.tipe === 0 && toNode?.tipe === 2;
+
+    let rushPenalty = 0;
+    if (rushHour && isWaitingLift) {
+      const liftName = toNode.nama.toLowerCase();
+      if (liftName.includes("gedung 9")) {
+        // Gedung 9: worst case 18 lantai x 20 detik
+        rushPenalty = 18 * 20;
+      } else if (liftName.includes("ppag")) {
+        // PPAG: worst case 29 lantai x 15 detik
+        rushPenalty = 29 * 15;
       }
-
-      // add edge to from node's neighbor list.
-      //weight includes base travel time + any rush hour penalty.
-      graph[String(edge.from_id)].neighbors.push({
-        toId: edge.to_id,
-        weight: parseFloat(edge.weight) + rushPenalty,
-        accessible: edge.accessible,
-      });
     }
+
+    // weight includes base travel time + any rush hour penalty.
+    const w = parseFloat(edge.weight) + rushPenalty;
+    // convert node IDs into matrix indices
+    const i = indexOf[fromSid];
+    const j = indexOf[toSid];
+
+    // store edge weight and accessibility
+    weightMatrix[i][j] = w;
+    accessMatrix[i][j] = edge.accessible;
   }
 
-  return graph;
+  return { nodeMeta, idList, indexOf, weightMatrix, accessMatrix };
+}
+
+// caching graf di memori
+// buildGraph() menjalankan 2 query SELECT * tiap
+// permintaan padahal graf hampir tak berubah
+// cache memakai ulang hasil build
+let _graphCacheEntry = null;
+const GRAPH_TTL_MS = 5 * 60 * 1000; //cache validity period (5 minutes)
+
+async function getCachedGraph() {
+  const now = Date.now();
+  const rush = isRushHour();
+
+  //reuse cached graph if cache exist and not expired, and rush hour status hasnt changed
+  if (
+    _graphCacheEntry &&
+    _graphCacheEntry.rush === rush &&
+    now - _graphCacheEntry.builtAt < GRAPH_TTL_MS
+  ) {
+    return _graphCacheEntry.data;
+  }
+  const data = await buildGraph(); // else rebuild the graph
+  // Store the new graph together with its metadata
+  _graphCacheEntry = { data, builtAt: now, rush };
+  return data;
 }
 
 // GET /api/nodes
-// All nodes for FROM dropdown. Excludes "Lift%" nodes.
-
+// All nodes for FROM dropdown. Excludes "Lift %" nodes.
 router.get("/nodes", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, nama, tipe FROM node
-       WHERE nama NOT ILIKE 'Lift%'
+       WHERE nama NOT ILIKE 'Lift %'
        ORDER BY nama ASC`,
     );
+    // Allow clients and browsers to cache the response for 10 minutes
+    res.set("Cache-Control", "public, max-age=600");
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching nodes:", err);
@@ -131,7 +155,6 @@ router.get("/nodes", async (req, res) => {
 
 // GET /api/nodes/destinations
 // Only is_destination = TRUE nodes for TO dropdown
-
 router.get("/nodes/destinations", async (req, res) => {
   try {
     const result = await pool.query(
@@ -139,6 +162,7 @@ router.get("/nodes/destinations", async (req, res) => {
        WHERE is_destination = TRUE
        ORDER BY nama ASC`,
     );
+    res.set("Cache-Control", "public, max-age=600");
     res.json(result.rows);
   } catch (err) {
     console.error("Error fetching destination nodes:", err);
@@ -146,141 +170,99 @@ router.get("/nodes/destinations", async (req, res) => {
   }
 });
 
-// GET /api/route/all?from=1&to=5
-//Runs A* for all 4 priority filters
-// return the cost (total seconds) for each.--> for home to display time estimates on PriorityCard
-// checks for hasAssist on the accessible route to trigger warning
-router.get("/route/all", async (req, res) => {
-  const { from, to } = req.query;
-  if (!from || !to)
-    return res.status(400).json({ error: "from and to are required" });
-
-  if (from === to)
-    return res
-      .status(400)
-      .json({ error: "from and to cannot be the same location" });
+// GET /api/graph
+// kirim matriks graf langsung ke client
+router.get("/graph", async (req, res) => {
   try {
-    const graph = await buildGraph();
-    const fromId = String(from);
-    const toId = String(to);
+    const { nodeMeta, idList, indexOf, weightMatrix, accessMatrix } =
+      await getCachedGraph();
 
-    if (!graph[fromId] || !graph[toId]) {
-      return res.status(404).json({ error: "Node not found" });
-    }
-
-    const results = {};
-
-    // run A* once for each priority filter
-    for (const key of ["none", "tangga", "lift", "disabilitas"]) {
-      const result = astar(graph, fromId, toId, getFilter(key, graph));
-
-      if (!result) {
-        results[key] = null;
-        continue;
-      }
-
-      const entry = {
-        cost: result.cost,
-        path: result.path.map((id) => graph[id].nama),
+    const nodes = idList.map((id) => {
+      const meta = nodeMeta[id];
+      return {
+        id: meta.id,
+        nama: meta.nama,
+        tipe: meta.tipe,
+        lantai: meta.lantai,
+        lantai_label: meta.lantai_label,
+        x: meta.x,
+        y: meta.y,
       };
+    });
 
-      //check if any edge requires assistance, yes --> frontend displays "Sebagian jalur butuh bantuan pendamping."
-      if (key === "disabilitas" && result) {
-        let hasAssist = false;
-        for (let i = 0; i < result.path.length - 1; i++) {
-          const fromId = result.path[i];
-          const toId = result.path[i + 1];
-          const edge = graph[fromId].neighbors.find(
-            (e) => String(e.toId) === toId,
-          );
-          if (edge && edge.accessible === 2) {
-            hasAssist = true;
-            break;
-          }
-        }
-        entry.hasAssist = hasAssist;
-      }
-
-      results[key] = entry;
-    }
-
-    res.json(results);
+    res.set("Cache-Control", "public, max-age=300");
+    res.json({ nodes, idList, indexOf, weightMatrix, accessMatrix });
   } catch (err) {
-    console.error("Error in /route/all:", err);
-    res.status(500).json({ error: "Failed to calculate routes" });
+    console.error("Error in /graph:", err);
+    res.status(500).json({ error: "Failed to build graph" });
   }
 });
 
-// GET /api/route?from=1&to=5&priority=lift
-// runs A* for a single priority and returns the full route including navigation steps with photos and instructions
-// endpoint called when the user press "Mulai Navigasi"
-router.get("/route", async (req, res) => {
-  const { from, to, priority } = req.query;
-  if (!from || !to || !priority) {
-    return res
-      .status(400)
-      .json({ error: "from, to, and priority are required" });
+// GET /api/route/steps?path=1,7,12,5&priority=lift
+// Menerima urutan simpul jalur yang SUDAH dihitung frontend, mengembalikan
+// langkah navigasi + foto panduan dari basis data
+router.get("/route/steps", async (req, res) => {
+  const { path: pathParam, priority } = req.query;
+  if (!pathParam) {
+    return res.status(400).json({ error: "path is required" });
   }
-  if (from === to) {
+  // Convert comma-separated IDs into an array
+  const path = pathParam.split(",").map((s) => s.trim());
+  if (path.length < 2) {
     return res
       .status(400)
-      .json({ error: "Lokasi awal dan tujuan tidak boleh sama" });
+      .json({ error: "path must contain at least 2 nodes" });
   }
 
   try {
-    const graph = await buildGraph();
-    const fromId = String(from);
-    const toId = String(to);
+    const { nodeMeta } = await getCachedGraph();
 
-    if (!graph[fromId] || !graph[toId]) {
-      return res.status(404).json({ error: "Node not found" });
+    for (const id of path) {
+      if (!nodeMeta[id]) {
+        return res.status(404).json({ error: `Node ${id} not found` });
+      }
     }
 
-    // FILTER
-    //use tipe: 0=lantai, 1=tangga, 2=lift.
-    const filterEdge = getFilter(priority, graph);
-    const result = astar(graph, fromId, toId, filterEdge);
-
-    if (!result) {
-      return res.status(404).json({
-        error:
-          priority === "disabilitas"
-            ? "Tidak ada rute yang sepenuhnya accessible untuk pengguna disabilitas pada jalur ini."
-            : "Tidak ada rute yang ditemukan.",
-      });
-    }
-
-    // PATH NODES: convert A* output (array of string IDs) into readable objects
-    const pathNodes = result.path.map((id) => ({
+    // PATH NODES: convert path IDs into readable objects
+    const pathNodes = path.map((id) => ({
       id: Number(id),
-      nama: graph[id].nama,
-      tipe: graph[id].tipe,
+      nama: nodeMeta[id].nama,
+      tipe: nodeMeta[id].tipe,
     }));
 
     const pathStr = pathNodes.map((n) => n.nama).join(" -> ");
-    const lastNodeId = result.path[result.path.length - 1];
-    // get confirmation image(s): split comma-separated confirmation images into array
-    const rawConfirmImg = graph[lastNodeId]?.confirmation_image || null;
-    const confirmationImages = rawConfirmImg
-      ? rawConfirmImg.split(",").map((s) => s.trim())
-      : [];
+    const lastNodeId = path[path.length - 1];
+    // confirmation_image sudah bertipe array dari kolom text[]
+    const confirmationImages = nodeMeta[lastNodeId]?.confirmation_image || [];
 
-    // EDGE PAIRS: convert path [A, B, C, D] into edge pairs [{A→B}, {B→C}, {C→D}]
+    // EDGE PAIRS: convert path [A, B, C, D] into edge pairs [{A->B}, {B->C}, {C->D}]
     const edgePairs = [];
-    for (let i = 0; i < result.path.length - 1; i++) {
-      edgePairs.push({ from: result.path[i], to: result.path[i + 1] });
+    for (let i = 0; i < path.length - 1; i++) {
+      edgePairs.push({ from: path[i], to: path[i + 1] });
     }
 
-    // FETCH EDGE IDs to lookup foto in db
-    const edgeQueryResults = await Promise.all(
-      edgePairs.map((pair) =>
-        pool.query("SELECT id FROM edge WHERE from_id = $1 AND to_id = $2", [
-          pair.from,
-          pair.to,
-        ]),
-      ),
+    // ambil semua edge di jalur dalam 1 query
+    // unnest pasangkan array from & to jadi baris, jadi ga perlu query per pasangan
+    const fromIds = edgePairs.map((p) => Number(p.from));
+    const toIds = edgePairs.map((p) => Number(p.to));
+
+    const edgeRowsRes = await pool.query(
+      `SELECT id, from_id, to_id FROM edge
+       WHERE (from_id, to_id) IN (
+         SELECT * FROM unnest($1::int[], $2::int[])
+       )`,
+      [fromIds, toIds],
     );
-    const edgesData = edgeQueryResults.map((r) => r.rows[0] || null);
+
+    // hasil query ga urut, susun balik ke urutan path lewat lookup key "from->to"
+    const edgeLookup = {};
+    for (const row of edgeRowsRes.rows) {
+      edgeLookup[`${row.from_id}->${row.to_id}`] = row;
+    }
+    // Restore edges to match the original route order
+    const edgesData = edgePairs.map(
+      (p) => edgeLookup[`${p.from}->${p.to}`] || null,
+    );
 
     // FETCH IMAGES
     const edgeIds = edgesData.filter(Boolean).map((e) => e.id);
@@ -313,22 +295,21 @@ router.get("/route", async (req, res) => {
 
     while (i < edgePairs.length) {
       const pair = edgePairs[i];
-      const fromNode = graph[pair.from];
-      const toNode = graph[pair.to];
+      const fromNode = nodeMeta[pair.from];
+      const toNode = nodeMeta[pair.to];
 
       const fromIsLift = fromNode.tipe === 2;
       const toIsLift = toNode.tipe === 2;
-      const isLiftEdge = fromIsLift || toIsLift;
       if (!fromIsLift && toIsLift) {
         let j = i;
-        //scan forward while destination nodes are still elevator type.
-        while (j < edgePairs.length && graph[edgePairs[j].to].tipe === 2) {
+        // scan forward while destination nodes are still elevator type.
+        while (j < edgePairs.length && nodeMeta[edgePairs[j].to].tipe === 2) {
           j++;
         }
         // j now is first edge AFTER the elevator sequence
         // edgePairs[j-1].to is the last elevator node (target floor) untuk tombol lift
         const lastLiftPair = edgePairs[j - 1];
-        const lastLiftNode = graph[lastLiftPair.to];
+        const lastLiftNode = nodeMeta[lastLiftPair.to];
 
         const targetFloor =
           lastLiftNode.lantai_label ?? lastLiftNode.lantai ?? "?";
@@ -346,11 +327,11 @@ router.get("/route", async (req, res) => {
           isLiftStep: true,
         });
 
-        //lewati merged steps
+        // lewati merged steps
         i = j;
         continue;
       } else if (fromIsLift && toIsLift) {
-        //safety guard kalau dimulai dari lift tanpa pintu
+        // safety guard kalau dimulai dari lift tanpa pintu
         i++;
         continue;
       } else {
@@ -372,15 +353,14 @@ router.get("/route", async (req, res) => {
 
     res.json({
       priority,
-      pathStr, //path str for debug
-      cost: result.cost,
-      path: pathNodes, //array of {id, nama, tipe} objects
+      pathStr, // path str for debug
+      path: pathNodes, // array of {id, nama, tipe} objects
       steps, // navigation steps with photos & instructions
       confirmationImages,
     });
   } catch (err) {
-    console.error("Error in /route:", err);
-    res.status(500).json({ error: "Pathfinding failed" });
+    console.error("Error in /route/steps:", err);
+    res.status(500).json({ error: "Failed to build navigation steps" });
   }
 });
 

@@ -2,12 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchDropdown from "../components/SearchDropdown.jsx";
 import PriorityCard from "../components/PriorityCard.jsx";
-import {
-  getNodes,
-  getDestinationNodes,
-  getAllRoutes,
-} from "../services/api.js";
-
+import { getNodes, getDestinationNodes } from "../services/api.js";
+import { computeAllRoutes } from "../services/routing.js";
 import {
   IconArrowDown,
   IconBan,
@@ -83,7 +79,7 @@ export default function Home() {
     }
     setEstimating(true);
     setWarning("");
-    getAllRoutes(from, to)
+    computeAllRoutes(from, to)
       .then((data) => {
         setRouteData(data);
         setEstimating(false);
@@ -245,18 +241,6 @@ export default function Home() {
           </div>
         )}
 
-        {priority === "disabilitas" && routeData?.disabilitas?.hasAssist && (
-          <div
-            className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-sm text-amber-800"
-            style={{ animation: "fadeIn 0.2s ease" }}
-          >
-            <IconWarning />
-            <p className="leading-relaxed">
-              Sebagian jalur butuh <strong>bantuan pendamping</strong>.
-            </p>
-          </div>
-        )}
-
         {(() => {
           const destNode = destNodes.find((n) => Number(n.id) === Number(to));
           const nama = destNode?.nama?.toLowerCase() || "";
@@ -274,6 +258,18 @@ export default function Home() {
               <strong>Gedung 9 Lantai B1</strong> untuk akses rute accessible ke{" "}
               <strong> Perpustakaan</strong> dan{" "}
               <strong>Laboratorium Komputasi Gedung 9</strong>.
+            </p>
+          </div>
+        )}
+
+        {priority === "disabilitas" && routeData?.disabilitas?.hasAssist && (
+          <div
+            className="flex items-start gap-2.5 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl mb-3 text-sm text-amber-800"
+            style={{ animation: "fadeIn 0.2s ease" }}
+          >
+            <IconWarning />
+            <p className="leading-relaxed">
+              Sebagian jalur butuh <strong>bantuan pendamping</strong>.
             </p>
           </div>
         )}

@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { getRoute } from "../services/api.js";
+import { computeRouteWithSteps } from "../services/routing.js";
 import TopBar from "../components/TopBar.jsx";
 import {
   IconNext,
   IconBack,
-  IconWarning,
-  IconParking,
   IconImage,
   IconBan,
 } from "../components/Icons.jsx";
@@ -52,13 +50,19 @@ export default function RoutePage() {
       setLoading(false);
       return;
     }
-    getRoute(from, to, priority)
+    // computeRouteWithSteps return {error} (bukan throw), jadi cek data.error
+    computeRouteWithSteps(from, to, priority)
       .then((data) => {
+        if (data.error) {
+          setError(data.error);
+          setLoading(false);
+          return;
+        }
         setResult(data);
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.response?.data?.error || "Gagal mendapatkan rute");
+      .catch(() => {
+        setError("Gagal mendapatkan rute");
         setLoading(false);
       });
   }, []); //dependecy memang kosong karena hanya fetch route saat pertama kali halaman dibuka dan tidak berubahubah
@@ -209,29 +213,6 @@ export default function RoutePage() {
           }}
         />
       </div>
-
-      {/* WARNINGS */}
-      {result?.warnings?.length > 0 && (
-        <div className="bg-white border-b border-surface-3 px-4 py-2 flex flex-col gap-1.5">
-          {result.warnings.map((w, i) => (
-            <div
-              key={i}
-              className={[
-                "flex items-start gap-2 px-3 py-2 rounded-xl text-xs leading-relaxed",
-                w.type === "assist"
-                  ? "bg-amber-50 text-amber-800 border border-amber-200"
-                  : "",
-                w.type === "parking"
-                  ? "bg-blue-50 text-blue-800 border border-blue-200"
-                  : "",
-              ].join(" ")}
-            >
-              {w.type === "assist" ? <IconWarning /> : <IconParking />}
-              <p>{w.message}</p>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* IMAGE AREA */}
       <div className="flex-1 relative bg-[#111] flex items-center justify-center overflow-hidden">
