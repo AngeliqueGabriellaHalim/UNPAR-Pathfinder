@@ -244,7 +244,7 @@ export default function Home() {
         {(() => {
           const destNode = destNodes.find((n) => Number(n.id) === Number(to));
           const nama = destNode?.nama?.toLowerCase() || "";
-          return ["perpustakaan", "laboratorium", "lab"].some((kw) =>
+          return ["perpustakaan", "laboratorium komputasi"].some((kw) =>
             nama.includes(kw),
           );
         })() && (
