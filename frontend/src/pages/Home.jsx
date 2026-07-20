@@ -129,7 +129,7 @@ export default function Home() {
             className="text-white/60 text-xs font-semibold tracking-widest uppercase"
             style={{ fontFamily: "var(--font-family-display)" }}
           >
-            Parahyangan Navigator
+            Navigasi UNPAR
           </span>
         </div>
         <h1

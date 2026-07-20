@@ -141,8 +141,9 @@ router.get("/nodes", async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT id, nama, tipe FROM node
-       WHERE nama NOT ILIKE 'Lift %'
-       ORDER BY nama ASC`,
+   WHERE nama NOT ILIKE 'Lift %'
+     AND tipe <> 1
+   ORDER BY nama ASC`,
     );
     // Allow clients and browsers to cache the response for 10 minutes
     res.set("Cache-Control", "public, max-age=600");
@@ -314,8 +315,18 @@ router.get("/route/steps", async (req, res) => {
         const targetFloor =
           lastLiftNode.lantai_label ?? lastLiftNode.lantai ?? "?";
         // use photos from the FIRST edge only
+        // use photos from the FIRST edge only; fall back to a default lift photo if none exist
         const firstEdge = edgesData[i];
-        const liftImages = firstEdge ? imagesMap[firstEdge.id] || [] : [];
+        let liftImages = firstEdge ? imagesMap[firstEdge.id] || [] : [];
+        if (liftImages.length === 0) {
+          liftImages = [
+            {
+              url: "/uploads/532_543.png",
+              petunjuk: null,
+              stepOrder: 1,
+            },
+          ];
+        }
 
         steps.push({
           from: fromNode.nama,
